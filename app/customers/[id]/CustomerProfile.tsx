@@ -49,7 +49,7 @@ export default function CustomerProfile({ id }: { id: string }) {
 
   if (!customer) {
     return (
-      <main className="min-h-screen bg-[#F8F8FC] p-8">
+      <main className="flex min-h-screen flex-col bg-[#F8F8FC] md:flex-row">
         <h1 className="text-2xl font-bold text-gray-900">Customer not found</h1>
 
         <Link

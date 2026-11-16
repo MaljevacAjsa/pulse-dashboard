@@ -32,7 +32,7 @@ const stats = [
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#F6F5F8] md:flex-row">
+    <div className="flex min-h-screen flex-col bg-[#F8F8FC] md:flex-row">
       <Sidebar />
 
       <main className="flex-1 p-6 md:p-10">

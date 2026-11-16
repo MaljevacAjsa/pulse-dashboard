@@ -217,7 +217,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f8f8fc] text-gray-900">
+    <div className="flex min-h-screen flex-col bg-[#F8F8FC] md:flex-row">
       <Sidebar />
 
       <main className="min-w-0 flex-1 p-6 md:p-10">

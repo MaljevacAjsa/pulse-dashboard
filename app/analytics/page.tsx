@@ -121,10 +121,13 @@ export default function AnalyticsPage() {
           .reduce((total, transaction) => total + transaction.amount, 0);
 
         return {
-          month: date.toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-          }),
+          month:
+            selectedPeriod === "30days"
+              ? `${date.getDate()}.${date.getMonth() + 1}.`
+              : date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                }),
           amount,
         };
       });
@@ -231,7 +234,7 @@ export default function AnalyticsPage() {
     URL.revokeObjectURL(url);
   };
   return (
-    <div className="flex min-h-screen flex-col bg-[#F6F5F8] md:flex-row">
+    <div className="flex min-h-screen flex-col bg-[#F8F8FC] md:flex-row">
       <Sidebar />
 
       <main className="flex-1 p-6 md:p-10">
