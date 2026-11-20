@@ -1,70 +1,79 @@
-import Sidebar from "@/components/Sidebar";
-import StatCard from "@/components/StatCard";
-import RevenueChart from "@/components/RevenueChart";
-import RecentOrders from "@/components/RecentOrders";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "€24,580",
-    change: "+12.8% this month",
-    icon: "💰",
-  },
-  {
-    title: "Total Expenses",
-    value: "€8,240",
-    change: "+3.2% this month",
-    icon: "💳",
-  },
-  {
-    title: "Net Profit",
-    value: "€16,340",
-    change: "+18.4% this month",
-    icon: "📈",
-  },
-  {
-    title: "Active Customers",
-    value: "1,284",
-    change: "+8.6% this month",
-    icon: "👥",
-  },
-];
+export async function GET() {
+  try {
+    const user = await getCurrentUser();
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen flex-col bg-[#F8F8FC] md:flex-row">
-      <Sidebar />
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
 
-      <main className="flex-1 p-6 md:p-10">
-        <header className="mb-8">
-          <p className="text-sm text-gray-500">Welcome back!</p>
+    const [customers, revenue, transactions] = await Promise.all([
+      prisma.customer.findMany({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          status: true,
+        },
+      }),
 
-          <h1 className="mt-1 text-3xl font-semibold text-[#22232D]">
-            Overview
-          </h1>
+      prisma.transaction.aggregate({
+        where: {
+          status: "Completed",
+          customer: {
+            userId: user.id,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
 
-          <p className="mt-2 text-sm text-gray-500">
-            Here's what's happening with your business today.
-          </p>
-        </header>
+      prisma.transaction.findMany({
+        where: {
+          customer: {
+            userId: user.id,
+          },
+        },
+        include: {
+          customer: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          date: "desc",
+        },
+        take: 5,
+      }),
+    ]);
 
-        {/* Statistics cards */}
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              change={stat.change}
-              icon={stat.icon}
-            />
-          ))}
-        </section>
-        <div className="mt-8">
-          <RevenueChart />
-        </div>
-        <RecentOrders />
-      </main>
-    </div>
-  );
+    const totalRevenue = revenue._sum.amount?.toNumber() ?? 0;
+
+    return NextResponse.json({
+      totalRevenue,
+      totalExpenses: 0,
+      netProfit: totalRevenue,
+      activeCustomers: customers.filter(
+        (customer) => customer.status === "Active",
+      ).length,
+      recentTransactions: transactions.map((transaction) => ({
+        id: transaction.reference,
+        customer: transaction.customer.name,
+        date: transaction.date.toISOString().split("T")[0],
+        amount: transaction.amount.toNumber(),
+        status: transaction.status,
+      })),
+    });
+  } catch (error) {
+    console.error("Dashboard API error:", error);
+
+    return NextResponse.json(
+      { error: "Failed to load dashboard." },
+      { status: 500 },
+    );
+  }
 }
