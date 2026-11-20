@@ -109,6 +109,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         id,
         userId: user.id,
       },
+      include: {
+        _count: {
+          select: {
+            transactions: true,
+          },
+        },
+      },
     });
 
     if (!existingCustomer) {
@@ -118,8 +125,20 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
+    if (existingCustomer._count.transactions > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "This customer cannot be deleted because they have existing transactions.",
+        },
+        { status: 409 },
+      );
+    }
+
     await prisma.customer.delete({
-      where: { id },
+      where: {
+        id,
+      },
     });
 
     return NextResponse.json({
